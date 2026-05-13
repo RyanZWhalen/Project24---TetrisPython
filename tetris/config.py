@@ -26,19 +26,10 @@ BTN_RED_HOVER = (235, 95, 95)
 BTN_TEXT = (12, 12, 16)
 GRID_LINE = (40, 40, 50)
 
-# Drop speeds (seconds per row) per difficulty
-SPEED_EASY = 1.0
-SPEED_NORMAL = 0.5
-SPEED_HARD = 1.0 / 3.0
-
-# Pre-game countdown (seconds). Hard skips the countdown.
-COUNTDOWN_EASY = 5
-COUNTDOWN_NORMAL = 3
-COUNTDOWN_HARD = 0
-
-# Hold storage
-HOLD_CAPACITY = 3
-HOLD_KEY_NAME = "C"
+# Key bindings (display names; per-difficulty drop intervals, hold capacity,
+# and countdown live in tetris.core.difficulty)
+KEY_STORE = "C"
+KEY_RETRIEVE = "V"
 
 # Scoring (classic NES line-clear curve)
 LINE_CLEAR_POINTS = {1: 40, 2: 100, 3: 300, 4: 1200}
