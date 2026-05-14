@@ -24,13 +24,14 @@ class DifficultyTests(unittest.TestCase):
         self.assertTrue(NORMAL.show_game_start)
         self.assertFalse(HARD.show_game_start)
 
-    def test_soft_drop_halves_interval_across_modes(self):
-        # Total traversal for 20 rows under soft drop should be exactly half
-        # of the normal traversal, in every mode.
+    def test_soft_drop_speedup_applied_uniformly(self):
+        # Total traversal for 20 rows under soft drop should be exactly
+        # normal / SOFT_DROP_SPEEDUP in every mode (20x Tetris Guideline).
+        self.assertEqual(SOFT_DROP_SPEEDUP, 20.0)
         for d in ALL:
             normal_total = 20 * d.drop_interval
             soft_total = 20 * (d.drop_interval / SOFT_DROP_SPEEDUP)
-            self.assertAlmostEqual(soft_total, normal_total / 2.0)
+            self.assertAlmostEqual(soft_total, normal_total / SOFT_DROP_SPEEDUP)
 
     def test_difficulty_is_frozen(self):
         with self.assertRaises(Exception):
