@@ -1,10 +1,21 @@
 """The active gameplay scene: board, side panels, controls cheat-sheet."""
 from __future__ import annotations
+from dataclasses import dataclass
+from typing import Callable
 import pygame
 from tetris import config
 from tetris.core.difficulty import Difficulty, EASY
 from tetris.core.game_state import GameState
 from tetris.ui import render
+
+
+@dataclass
+class _RepeatState:
+    """Per-held-key auto-repeat bookkeeping (DAS / ARR model)."""
+    held_for: float        # total seconds since key was first pressed
+    next_fire: float       # held_for value at which the next repeat should fire
+    interval: float        # seconds between repeats once auto-repeat begins
+    action: Callable[[], object]
 
 
 CONTROL_LINES = [
@@ -20,28 +31,42 @@ CONTROL_LINES = [
 class GameScene:
     NEXT = "start"
 
+    # DAS = delay before auto-repeat kicks in; ARR = interval between repeats.
+    MOVE_DAS = 0.17
+    MOVE_ARR = 0.05
+    ROTATE_DAS = 0.17
+    ROTATE_ARR = 0.15
+
     def __init__(self, difficulty: Difficulty = EASY):
         self.difficulty = difficulty
         self.game = GameState(difficulty)
         self.done = False
         self.paused = False
+        self._held: dict[int, _RepeatState] = {}
         self.title_font = pygame.font.SysFont("Helvetica", 24, bold=True)
         self.label_font = pygame.font.SysFont("Helvetica", 15, bold=True)
         self.value_font = pygame.font.SysFont("Helvetica", 30, bold=True)
         self.small_font = pygame.font.SysFont("Helvetica", 12)
         self.gameover_font = pygame.font.SysFont("Helvetica", 64, bold=True)
 
+    def _start_repeat(self, key: int, das: float, arr: float, action: Callable[[], object]) -> None:
+        self._held[key] = _RepeatState(held_for=0.0, next_fire=das, interval=arr, action=action)
+
+    def _stop_repeat(self, key: int) -> None:
+        self._held.pop(key, None)
+
     def handle_event(self, event):
         if self.game.game_over:
             if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
                 self.done = True
             return
-        # Esc toggles pause regardless of state; soft-drop must release on pause
-        # so the piece doesn't keep falling at 20x the moment we unpause.
+        # Esc toggles pause regardless of state; clear auto-repeats and soft-drop
+        # so the piece doesn't keep doing things the moment we unpause.
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.paused = not self.paused
             if self.paused:
                 self.game.set_soft_drop(False)
+                self._held.clear()
             return
         if self.paused:
             return
@@ -49,12 +74,16 @@ class GameScene:
             key = event.key
             if key == pygame.K_a:
                 self.game.move_left()
+                self._start_repeat(key, self.MOVE_DAS, self.MOVE_ARR, self.game.move_left)
             elif key == pygame.K_d:
                 self.game.move_right()
+                self._start_repeat(key, self.MOVE_DAS, self.MOVE_ARR, self.game.move_right)
             elif key == pygame.K_LEFT:
                 self.game.rotate_ccw()
+                self._start_repeat(key, self.ROTATE_DAS, self.ROTATE_ARR, self.game.rotate_ccw)
             elif key == pygame.K_RIGHT:
                 self.game.rotate_cw()
+                self._start_repeat(key, self.ROTATE_DAS, self.ROTATE_ARR, self.game.rotate_cw)
             elif key == pygame.K_DOWN:
                 self.game.set_soft_drop(True)
             elif key == pygame.K_c:
@@ -64,10 +93,16 @@ class GameScene:
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_DOWN:
                 self.game.set_soft_drop(False)
+            self._stop_repeat(event.key)
 
     def update(self, dt):
         if self.paused:
             return
+        for state in self._held.values():
+            state.held_for += dt
+            while state.held_for >= state.next_fire:
+                state.action()
+                state.next_fire += state.interval
         self.game.tick(dt)
 
     def draw(self, surface):

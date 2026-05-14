@@ -1,15 +1,17 @@
 """Top-level pygame app: window, main loop, scene state machine."""
 import pygame
 from tetris import config
+from tetris.scenes.countdown_scene import CountdownScene
+from tetris.scenes.difficulty_scene import DifficultyScene
 from tetris.scenes.game_scene import GameScene
 from tetris.scenes.start_scene import StartScene
 
 
 SCENES = {
     "start": StartScene,
-    "game": GameScene,  # Phase 3: directly from start. Phase 4 inserts difficulty + countdown.
-    # "difficulty": DifficultyScene,
-    # "countdown":  CountdownScene,
+    "difficulty": DifficultyScene,
+    "countdown": CountdownScene,
+    "game": GameScene,
 }
 
 
@@ -46,8 +48,9 @@ def run():
 
         if getattr(scene, "done", False):
             next_name = getattr(scene, "NEXT", None)
+            payload = getattr(scene, "payload", None) or {}
             if next_name in SCENES:
-                scene = SCENES[next_name]()
+                scene = SCENES[next_name](**payload)
             else:
                 running = False
 

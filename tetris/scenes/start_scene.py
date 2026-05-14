@@ -5,7 +5,7 @@ from tetris.ui.widgets import Button, center_rect
 
 
 class StartScene:
-    NEXT = "game"  # temporary direct-to-game wiring; Phase 4 inserts difficulty + countdown
+    NEXT = "difficulty"
 
     def __init__(self):
         self.title_font = pygame.font.SysFont("Helvetica", 72, bold=True)
