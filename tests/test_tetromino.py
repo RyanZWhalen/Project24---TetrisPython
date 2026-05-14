@@ -74,6 +74,31 @@ class TetrominoTests(unittest.TestCase):
         self.assertEqual(b.row, 1)
         self.assertEqual(b.col, a.col + 2)
 
+    def test_spawn_rotation_state_is_zero(self):
+        for kind in ALL_SHAPES:
+            self.assertEqual(Tetromino.spawn(kind, 10).rotation, 0, kind)
+
+    def test_rotation_state_cycles_on_cw(self):
+        t = Tetromino.spawn("T", 10)
+        states = [t.rotation]
+        for _ in range(4):
+            t = t.rotated_cw()
+            states.append(t.rotation)
+        self.assertEqual(states, [0, 1, 2, 3, 0])
+
+    def test_rotation_state_cycles_on_ccw(self):
+        t = Tetromino.spawn("T", 10)
+        states = [t.rotation]
+        for _ in range(4):
+            t = t.rotated_ccw()
+            states.append(t.rotation)
+        self.assertEqual(states, [0, 3, 2, 1, 0])
+
+    def test_moved_preserves_rotation_state(self):
+        t = Tetromino.spawn("T", 10).rotated_cw()
+        self.assertEqual(t.rotation, 1)
+        self.assertEqual(t.moved(dr=5, dc=2).rotation, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

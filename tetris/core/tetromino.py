@@ -57,6 +57,7 @@ class Tetromino:
     cells: tuple        # (row, col) offsets within an NxN bounding box
     row: int = 0        # bounding-box top-left row on the board
     col: int = 0        # bounding-box top-left col on the board
+    rotation: int = 0   # SRS rotation state: 0 (spawn) / 1 (R) / 2 (180) / 3 (L)
 
     @classmethod
     def spawn(cls, kind: str, board_cols: int) -> "Tetromino":
@@ -75,16 +76,20 @@ class Tetromino:
 
     def rotated_cw(self) -> "Tetromino":
         return Tetromino(
-            self.kind, _rotate_in_box_cw(self.cells, self.box), self.row, self.col,
+            self.kind, _rotate_in_box_cw(self.cells, self.box),
+            self.row, self.col, (self.rotation + 1) % 4,
         )
 
     def rotated_ccw(self) -> "Tetromino":
         return Tetromino(
-            self.kind, _rotate_in_box_ccw(self.cells, self.box), self.row, self.col,
+            self.kind, _rotate_in_box_ccw(self.cells, self.box),
+            self.row, self.col, (self.rotation - 1) % 4,
         )
 
     def moved(self, dr: int = 0, dc: int = 0) -> "Tetromino":
-        return Tetromino(self.kind, self.cells, self.row + dr, self.col + dc)
+        return Tetromino(
+            self.kind, self.cells, self.row + dr, self.col + dc, self.rotation,
+        )
 
     def absolute_cells(self):
         return [(self.row + r, self.col + c) for r, c in self.cells]

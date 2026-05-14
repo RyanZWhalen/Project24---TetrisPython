@@ -23,17 +23,41 @@ from tetris.core.scoring import Score
 from tetris.core.tetromino import Tetromino
 
 
-# Offsets tried after a rotation. If the rotated piece doesn't fit in place,
-# try these small shifts in order; the first one that fits wins. Standard
-# Tetris parlance: "wall kicks" (handles bottom/side collisions on rotation).
-ROTATION_KICKS = (
-    (0, 0),    # in place
-    (0, -1),   # 1 left
-    (0, 1),    # 1 right
-    (-1, 0),   # 1 up (floor kick)
-    (0, -2),   # 2 left (I-piece against left wall)
-    (0, 2),    # 2 right (I-piece against right wall)
-)
+# SRS (Super Rotation System) wall-kick tables. When a rotation collides, the
+# game tries up to 5 specific (dr, dc) offsets per (from_state, to_state); the
+# first that fits wins. Rotation states: 0 = spawn, 1 = R (CW), 2 = 180, 3 = L.
+#
+# Standard SRS uses (dx, dy) with y-up positive. My grid has row-down positive,
+# so each (dx, dy) is translated to (dr, dc) = (-dy, dx).
+
+SRS_KICKS_JLSTZ = {
+    (0, 1): ((0, 0), (0, -1), (-1, -1), (2, 0), (2, -1)),   # 0 -> R
+    (1, 0): ((0, 0), (0, 1), (1, 1), (-2, 0), (-2, 1)),     # R -> 0
+    (1, 2): ((0, 0), (0, 1), (1, 1), (-2, 0), (-2, 1)),     # R -> 2
+    (2, 1): ((0, 0), (0, -1), (-1, -1), (2, 0), (2, -1)),   # 2 -> R
+    (2, 3): ((0, 0), (0, 1), (-1, 1), (2, 0), (2, 1)),      # 2 -> L
+    (3, 2): ((0, 0), (0, -1), (1, -1), (-2, 0), (-2, -1)),  # L -> 2
+    (3, 0): ((0, 0), (0, -1), (1, -1), (-2, 0), (-2, -1)),  # L -> 0
+    (0, 3): ((0, 0), (0, 1), (-1, 1), (2, 0), (2, 1)),      # 0 -> L
+}
+
+SRS_KICKS_I = {
+    (0, 1): ((0, 0), (0, -2), (0, 1), (1, -2), (-2, 1)),    # 0 -> R
+    (1, 0): ((0, 0), (0, 2), (0, -1), (-1, 2), (2, -1)),    # R -> 0
+    (1, 2): ((0, 0), (0, -1), (0, 2), (-2, -1), (1, 2)),    # R -> 2
+    (2, 1): ((0, 0), (0, 1), (0, -2), (2, 1), (-1, -2)),    # 2 -> R
+    (2, 3): ((0, 0), (0, 2), (0, -1), (-1, 2), (2, -1)),    # 2 -> L
+    (3, 2): ((0, 0), (0, -2), (0, 1), (1, -2), (-2, 1)),    # L -> 2
+    (3, 0): ((0, 0), (0, 1), (0, -2), (2, 1), (-1, -2)),    # L -> 0
+    (0, 3): ((0, 0), (0, -1), (0, 2), (-2, -1), (1, 2)),    # 0 -> L
+}
+
+
+def _kick_table(kind: str, from_state: int, to_state: int):
+    if kind == "O":
+        return ((0, 0),)
+    table = SRS_KICKS_I if kind == "I" else SRS_KICKS_JLSTZ
+    return table[(from_state, to_state)]
 
 
 class GameState:
@@ -95,10 +119,11 @@ class GameState:
         return self._try_rotate(self.current.rotated_ccw())
 
     def _try_rotate(self, rotated: Tetromino) -> bool:
-        """Try the rotation in place; if that collides, try each kick offset."""
+        """Try in place, then walk the SRS kick table for this transition."""
         if self.game_over:
             return False
-        for dr, dc in ROTATION_KICKS:
+        kicks = _kick_table(self.current.kind, self.current.rotation, rotated.rotation)
+        for dr, dc in kicks:
             candidate = rotated.moved(dr=dr, dc=dc)
             if self.board.is_valid(candidate):
                 self.current = candidate
