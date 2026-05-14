@@ -41,6 +41,11 @@ def _rotate_ccw(cells):
     return _normalize((-c, r) for r, c in cells)
 
 
+def base_cells(kind: str):
+    """Canonical normalized cell offsets for a shape — for previews and tests."""
+    return _normalize(SHAPE_CELLS[kind])
+
+
 @dataclass(frozen=True)
 class Tetromino:
     kind: str

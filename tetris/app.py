@@ -1,15 +1,15 @@
 """Top-level pygame app: window, main loop, scene state machine."""
 import pygame
 from tetris import config
+from tetris.scenes.game_scene import GameScene
 from tetris.scenes.start_scene import StartScene
 
 
 SCENES = {
     "start": StartScene,
-    # "difficulty": DifficultyScene,  (added when implemented)
-    # "countdown": CountdownScene,
-    # "game":      GameScene,
-    # "gameover":  GameOverScene,
+    "game": GameScene,  # Phase 3: directly from start. Phase 4 inserts difficulty + countdown.
+    # "difficulty": DifficultyScene,
+    # "countdown":  CountdownScene,
 }
 
 
