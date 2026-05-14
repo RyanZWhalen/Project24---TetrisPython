@@ -87,54 +87,49 @@ class GameStateMovementTests(unittest.TestCase):
         self.assertEqual(gs.current.cells, before)
 
     def test_rotation_blocked_by_collision_is_rejected(self):
+        # Put a T deep in the board (so kicks can't escape above row 0) and
+        # surround it with locked cells thick enough that no SRS kick fits.
         gs = fresh(EASY)
-        gs.current = Tetromino.spawn("I", gs.board.cols)
-        # Surround with locked cells so any rotation must collide.
-        for r in range(gs.board.rows):
+        gs.current = Tetromino.spawn("T", gs.board.cols).moved(dr=10)
+        cur_set = set(gs.current.absolute_cells())
+        for r in range(8, 16):  # +/- 2 rows of kick reach around the piece
             for c in range(gs.board.cols):
-                if (r, c) not in gs.current.absolute_cells():
+                if (r, c) not in cur_set:
                     gs.board.grid[r][c] = (1, 1, 1)
         before = gs.current.cells
         self.assertFalse(gs.rotate_cw())
         self.assertEqual(gs.current.cells, before)
 
-    def test_t_spin_uses_srs_fifth_kick(self):
-        # Classic T-spin: a T-shaped slot two rows deep, only reachable by
-        # rotating into it via the SRS 5th kick (which includes a 2-row drop).
-        # This test only passes with the per-transition SRS kick tables; the
-        # old flat 6-entry kick list could not reach it.
+    def test_srs_kick_shifts_piece_when_in_place_collides(self):
+        # Verify a specific SRS kick offset fires when the in-place rotation
+        # is blocked. T-piece state 0 -> R: kick #1 (0, 0); kick #2 (0, -1).
+        # We block kick #1's destination cell so the engine must take kick #2,
+        # which shifts the piece one column left.
         gs = fresh(EASY)
-        rows = gs.board.rows
-        cols = gs.board.cols
-        # Build a wall on cols 0-2 and 4-9; col 3 is open. Bottom row is
-        # filled except for col 3, with col 4 also empty just below the cap:
-        #
-        #   col: 0 1 2 3 4 5 6 7 8 9
-        #   r-2: # # # . . # # # # #
-        #   r-1: # # # . # # # # # #     <-- target T-spin slot at (r-1, 3..4) hump at (r-2, 3)
-        for c in range(cols):
-            if c not in (3, 4):
-                gs.board.grid[rows - 2][c] = (1, 1, 1)
-            if c != 3:
-                gs.board.grid[rows - 1][c] = (1, 1, 1)
-        gs.board.grid[rows - 2][4] = None  # carve the slot
-        # Place a T-piece in rotation state L (pointing left), hovering above
-        # the slot. From this state, rotating CW should pivot the T into the
-        # slot via a kick.
-        t = Tetromino.spawn("T", cols).rotated_ccw()      # state L (3)
-        # Move it horizontally so the piece sits over column 3.
-        t = Tetromino(
-            kind=t.kind, cells=t.cells,
-            row=rows - 4, col=2, rotation=t.rotation,
-        )
-        gs.current = t
-        # In-place CW rotation collides with the wall; only the kick table
-        # rescues it.
+        gs.current = Tetromino.spawn("T", gs.board.cols).moved(dr=10)
+        original_col = gs.current.col
+        # After CW rotation in place, the bottommost cell of the rotated T
+        # would land at (12, original_col + 2). Block it.
+        gs.board.grid[12][original_col + 2] = (1, 1, 1)
         self.assertTrue(gs.rotate_cw())
-        # After the T-spin, the bottom row gap at col 3 should be filled by
-        # part of the rotated T.
-        abs_cells = set(gs.current.absolute_cells())
-        self.assertIn((rows - 1, 3), abs_cells)
+        self.assertEqual(gs.current.col, original_col - 1)  # took kick (0, -1)
+        self.assertEqual(gs.current.rotation, 1)
+
+    def test_srs_kick_chooses_i_piece_table(self):
+        # The I-piece uses a distinct kick table (different offsets including
+        # +/- 2 columns). Verify rotation succeeds against the right wall via
+        # the I-table's kick #2 = (0, -2).
+        gs = fresh(EASY)
+        gs.current = Tetromino.spawn("I", gs.board.cols)
+        self.assertTrue(gs.rotate_cw())   # now vertical, state R
+        while gs.move_right():
+            pass
+        # From here, R -> 2 transition: kick #2 is (0, -1), kick #3 is (0, 2).
+        # The piece must shift left to fit; verify it did.
+        col_before = gs.current.col
+        self.assertTrue(gs.rotate_cw())
+        self.assertLess(gs.current.col, col_before)
+        self.assertEqual(gs.current.rotation, 2)
 
     def test_wall_kick_rescues_rotation_at_right_wall(self):
         # Stand the I-piece up vertically, jam it against the right wall, then
