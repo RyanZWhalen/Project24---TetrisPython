@@ -23,6 +23,19 @@ from tetris.core.scoring import Score
 from tetris.core.tetromino import Tetromino
 
 
+# Offsets tried after a rotation. If the rotated piece doesn't fit in place,
+# try these small shifts in order; the first one that fits wins. Standard
+# Tetris parlance: "wall kicks" (handles bottom/side collisions on rotation).
+ROTATION_KICKS = (
+    (0, 0),    # in place
+    (0, -1),   # 1 left
+    (0, 1),    # 1 right
+    (-1, 0),   # 1 up (floor kick)
+    (0, -2),   # 2 left (I-piece against left wall)
+    (0, 2),    # 2 right (I-piece against right wall)
+)
+
+
 class GameState:
     def __init__(self, difficulty: Difficulty, rng: random.Random | None = None):
         self.difficulty = difficulty
@@ -76,10 +89,21 @@ class GameState:
         return self._try_replace_current(self.current.moved(dc=1))
 
     def rotate_cw(self) -> bool:
-        return self._try_replace_current(self.current.rotated_cw())
+        return self._try_rotate(self.current.rotated_cw())
 
     def rotate_ccw(self) -> bool:
-        return self._try_replace_current(self.current.rotated_ccw())
+        return self._try_rotate(self.current.rotated_ccw())
+
+    def _try_rotate(self, rotated: Tetromino) -> bool:
+        """Try the rotation in place; if that collides, try each kick offset."""
+        if self.game_over:
+            return False
+        for dr, dc in ROTATION_KICKS:
+            candidate = rotated.moved(dr=dr, dc=dc)
+            if self.board.is_valid(candidate):
+                self.current = candidate
+                return True
+        return False
 
     def _try_replace_current(self, candidate: Tetromino) -> bool:
         if self.game_over:
