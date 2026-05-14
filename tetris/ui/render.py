@@ -41,16 +41,26 @@ def draw_piece_on_board(surface: pygame.Surface, piece: Tetromino, top_left, cel
 
 
 def draw_shape_preview(surface: pygame.Surface, kind: str, center, cell_size: int) -> None:
-    """Render a tetromino centered at `center` in a small preview area."""
+    """Render a tetromino centered at `center` using its visible bounds.
+    Centering is based on min/max of the actual cells, not the bounding box,
+    so the I-piece (which has an empty top row in its 4x4 box) renders centered."""
     cells = base_cells(kind)
     color = SHAPE_COLORS[kind]
-    w = max(c for _, c in cells) + 1
-    h = max(r for r, _ in cells) + 1
+    rs = [r for r, _ in cells]
+    cs = [c for _, c in cells]
+    min_r, max_r = min(rs), max(rs)
+    min_c, max_c = min(cs), max(cs)
+    w = max_c - min_c + 1
+    h = max_r - min_r + 1
     cx, cy = center
     x0 = cx - (w * cell_size) // 2
     y0 = cy - (h * cell_size) // 2
     for r, c in cells:
-        rect = pygame.Rect(x0 + c * cell_size, y0 + r * cell_size, cell_size, cell_size)
+        rect = pygame.Rect(
+            x0 + (c - min_c) * cell_size,
+            y0 + (r - min_r) * cell_size,
+            cell_size, cell_size,
+        )
         draw_cell(surface, color, rect)
 
 

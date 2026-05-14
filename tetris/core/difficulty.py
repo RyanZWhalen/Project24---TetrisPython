@@ -45,4 +45,5 @@ HARD = Difficulty(
 ALL = (EASY, NORMAL, HARD)
 
 # Multiplier applied to drop_interval while the down arrow is held.
-SOFT_DROP_SPEEDUP = 2.0
+# 20x is the Tetris Guideline standard for soft drop (vs hard drop = instant).
+SOFT_DROP_SPEEDUP = 20.0

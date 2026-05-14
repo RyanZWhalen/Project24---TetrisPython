@@ -98,26 +98,21 @@ class GameStateMovementTests(unittest.TestCase):
         self.assertFalse(gs.rotate_cw())
         self.assertEqual(gs.current.cells, before)
 
-    def test_floor_kick_rescues_rotation_at_bottom(self):
-        # Two CWs from base T gives T-pointing-up (bump on top, base on bottom).
-        # Park base on the floor; rotating CW raw would push a cell below row 19.
-        # The (-1, 0) floor kick shifts the rotation up by 1 so it fits.
+    def test_wall_kick_rescues_rotation_at_right_wall(self):
+        # Stand the I-piece up vertically, jam it against the right wall, then
+        # rotate again: the raw rotated horizontal form would put a cell at
+        # column 10 (off the board). The (0, -1) kick should rescue it.
         gs = fresh(EASY)
-        t_up = Tetromino.spawn("T", gs.board.cols).rotated_cw().rotated_cw()
-        gs.current = Tetromino(
-            kind=t_up.kind, cells=t_up.cells,
-            row=gs.board.rows - t_up.height, col=t_up.col,
-        )
-        # Sanity: base of T-up sits exactly on the floor.
-        self.assertEqual(
-            max(r for r, _ in gs.current.absolute_cells()), gs.board.rows - 1,
-        )
+        gs.current = Tetromino.spawn("I", gs.board.cols)
+        self.assertTrue(gs.rotate_cw())  # vertical
+        while gs.move_right():
+            pass
+        col_before_rotate = gs.current.col
         self.assertTrue(gs.rotate_cw())
-        # Post-kick: piece's bottom still on the floor (the kick shifted only the
-        # raw-rotated form, which extended below the floor, up by one row).
-        self.assertEqual(
-            max(r for r, _ in gs.current.absolute_cells()), gs.board.rows - 1,
-        )
+        # The kick should have shifted the piece left by at least one column.
+        max_c_after = max(c for _, c in gs.current.absolute_cells())
+        self.assertLess(max_c_after, gs.board.cols)
+        self.assertLess(gs.current.col, col_before_rotate)
 
 
 class GameStateHoldTests(unittest.TestCase):

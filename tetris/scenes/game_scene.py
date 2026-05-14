@@ -10,9 +10,10 @@ from tetris.ui import render
 CONTROL_LINES = [
     "A / D       move left / right",
     "Left / Right    rotate CCW / CW",
-    "Down        soft drop (2x)",
+    "Down        soft drop (20x)",
     f"{config.KEY_STORE}            store shape",
     f"{config.KEY_RETRIEVE}            retrieve oldest",
+    "Esc          pause / unpause",
 ]
 
 
@@ -23,6 +24,7 @@ class GameScene:
         self.difficulty = difficulty
         self.game = GameState(difficulty)
         self.done = False
+        self.paused = False
         self.title_font = pygame.font.SysFont("Helvetica", 24, bold=True)
         self.label_font = pygame.font.SysFont("Helvetica", 15, bold=True)
         self.value_font = pygame.font.SysFont("Helvetica", 30, bold=True)
@@ -33,6 +35,15 @@ class GameScene:
         if self.game.game_over:
             if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
                 self.done = True
+            return
+        # Esc toggles pause regardless of state; soft-drop must release on pause
+        # so the piece doesn't keep falling at 20x the moment we unpause.
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            self.paused = not self.paused
+            if self.paused:
+                self.game.set_soft_drop(False)
+            return
+        if self.paused:
             return
         if event.type == pygame.KEYDOWN:
             key = event.key
@@ -55,6 +66,8 @@ class GameScene:
                 self.game.set_soft_drop(False)
 
     def update(self, dt):
+        if self.paused:
+            return
         self.game.tick(dt)
 
     def draw(self, surface):
@@ -91,6 +104,8 @@ class GameScene:
         if right.w > 60:
             self._draw_right_panel(surface, right)
 
+        if self.paused and not self.game.game_over:
+            self._draw_paused_overlay(surface, screen)
         if self.game.game_over:
             self._draw_gameover_overlay(surface, screen)
 
@@ -172,6 +187,15 @@ class GameScene:
                 pygame.draw.rect(surface, (180, 140, 20), slot, width=1, border_radius=3)
             else:
                 pygame.draw.rect(surface, config.GRID_LINE, slot, width=1, border_radius=3)
+
+    def _draw_paused_overlay(self, surface, screen):
+        overlay = pygame.Surface((screen.w, screen.h), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 150))
+        surface.blit(overlay, (0, 0))
+        title = self.gameover_font.render("Paused", True, config.FG)
+        surface.blit(title, title.get_rect(center=(screen.centerx, screen.centery - 20)))
+        hint = self.label_font.render("Press Esc to resume", True, config.DIM)
+        surface.blit(hint, hint.get_rect(center=(screen.centerx, screen.centery + 40)))
 
     def _draw_gameover_overlay(self, surface, screen):
         overlay = pygame.Surface((screen.w, screen.h), pygame.SRCALPHA)
