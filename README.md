@@ -20,11 +20,21 @@ Grab the prebuilt artifact for your OS from the **[Releases page](https://github
 
 | OS | Artifact | How to launch |
 |----|----------|---------------|
+| macOS | `Tetris.dmg` | Double-click, drag **Tetris.app** into **Applications**, then see the note below |
 | macOS | `Tetris.app.zip` | Unzip, double-click `Tetris.app` (or `open Tetris.app`) |
 | Windows | `Tetris.exe` | Double-click |
 | Linux | `Tetris.tar.gz` | Untar, run `./Tetris/Tetris` |
 
 > If no release artifact is available for your OS, fall back to one of the source paths below.
+
+#### ⚠️ macOS first-launch note (unsigned app)
+
+The app isn't code-signed or notarized (no Apple Developer account), so macOS Gatekeeper blocks it the first time with a *"can't be opened because the developer cannot be verified"* (or *"damaged"*) warning. This is a **one-time** step — do **one** of the following:
+
+- **Right-click** `Tetris.app` in Applications → **Open** → **Open** in the dialog. (On macOS 15 Sequoia, instead try to open it, then go to **System Settings → Privacy & Security → Open Anyway**.)
+- Or run this in Terminal once: `xattr -cr /Applications/Tetris.app`
+
+After that it opens normally on every launch.
 
 ### Build the binary yourself (if you'd rather not trust a download)
 

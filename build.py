@@ -14,6 +14,9 @@ Mode is chosen automatically:
     - Linux uses onedir (so SDL libs co-locate with the binary).
 
 Override with --onefile or --onedir if you have a reason to.
+
+Pass --dmg (macOS only) to also wrap dist/Tetris.app in a drag-to-Applications
+dist/Tetris.dmg after the build. No-op on Windows/Linux. See package_dmg.py.
 """
 from __future__ import annotations
 import platform
@@ -67,6 +70,16 @@ def main() -> int:
     result = subprocess.run(cmd, cwd=str(ROOT))
     if result.returncode != 0:
         return result.returncode
+
+    if "--dmg" in sys.argv:
+        if platform.system() == "Darwin":
+            print("\nPackaging .dmg ...")
+            import package_dmg
+            rc = package_dmg.build_dmg()
+            if rc != 0:
+                return rc
+        else:
+            print("\n--dmg ignored: .dmg packaging is macOS-only.")
 
     print()
     print(f"Build complete ({mode}). Artifacts in dist/:")
