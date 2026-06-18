@@ -58,6 +58,20 @@ python3 build.py
 
 Pass `--onefile` or `--onedir` to override the default mode.
 
+#### Package a macOS `.dmg` (optional, macOS only)
+
+To produce a polished drag-to-Applications `dist/Tetris.dmg`:
+
+```bash
+brew install create-dmg        # preferred; falls back to hdiutil if absent
+python3 build.py --dmg         # build the .app, then wrap it in Tetris.dmg
+# or, against an already-built dist/Tetris.app:
+python3 package_dmg.py
+python3 package_dmg.py --check # mount, verify layout, detach
+```
+
+The resulting `.dmg` is **unsigned/un-notarized** — recipients need the one-time first-launch step described above. This step is a no-op on Windows/Linux.
+
 ### Run from source (for development)
 
 ```bash
