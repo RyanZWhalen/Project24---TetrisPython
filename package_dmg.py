@@ -1,7 +1,10 @@
-"""Package dist/Tetris.app into a drag-to-Applications dist/Tetris.dmg (macOS only).
+"""Package dist/Tetris.app into a drag-to-Applications Tetris.dmg (macOS only).
+
+The .dmg is written to the repo root (next to Tetris.app.zip) so it's easy to
+find rather than buried in dist/.
 
 Usage:
-    python3 package_dmg.py            # build dist/Tetris.dmg from dist/Tetris.app
+    python3 package_dmg.py            # build Tetris.dmg from dist/Tetris.app
     python3 package_dmg.py --check    # mount the built .dmg, verify layout, detach
 
 This is an ADDITIVE macOS-only step. It does nothing on Windows/Linux. The
@@ -29,7 +32,9 @@ ROOT = Path(__file__).parent.resolve()
 APP_NAME = "Tetris"
 VOLNAME = "Tetris"
 APP_PATH = ROOT / "dist" / f"{APP_NAME}.app"
-DMG_PATH = ROOT / "dist" / f"{APP_NAME}.dmg"
+# Output to the repo root (next to Tetris.app.zip) so the deliverable is easy to
+# find rather than buried in dist/. Gitignored so it still isn't committed.
+DMG_PATH = ROOT / f"{APP_NAME}.dmg"
 
 
 def _require_macos() -> None:
@@ -96,8 +101,11 @@ def build_dmg() -> int:
         return rc or 1
 
     size_mb = DMG_PATH.stat().st_size / (1024 * 1024)
-    print(f"\nBuilt {DMG_PATH.relative_to(ROOT)} ({size_mb:.1f} MB)")
+    print(f"\nBuilt {DMG_PATH.name} ({size_mb:.1f} MB)")
+    print(f"  -> {DMG_PATH}")
     print("NOTE: unsigned/un-notarized — first-launch Gatekeeper bypass required (see README).")
+    # Reveal it in Finder so it's easy to grab (best-effort; ignored if unavailable).
+    subprocess.run(["open", "-R", str(DMG_PATH)], capture_output=True)
     return 0
 
 

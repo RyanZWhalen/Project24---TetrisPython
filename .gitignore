@@ -10,3 +10,5 @@ venv/
 build/
 dist/
 *.spec
+# macOS .dmg deliverable lives at the repo root for visibility; don't commit it.
+/Tetris.dmg

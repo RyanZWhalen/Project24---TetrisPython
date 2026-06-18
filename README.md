@@ -60,7 +60,8 @@ Pass `--onefile` or `--onedir` to override the default mode.
 
 #### Package a macOS `.dmg` (optional, macOS only)
 
-To produce a polished drag-to-Applications `dist/Tetris.dmg`:
+To produce a polished drag-to-Applications `Tetris.dmg` (written to the repo
+root, next to `Tetris.app.zip`, so it's easy to find):
 
 ```bash
 brew install create-dmg        # preferred; falls back to hdiutil if absent
